@@ -1,0 +1,80 @@
+@import url(colors.css);
+@import url(loading.css);
+
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+*:focus {
+  outline: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  background: var(--black);
+  color: var(--white);
+  padding: 1vw;
+  display: grid;
+  grid-template-rows: 50% 30% 10% 10%;
+  height: 100vh;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+h1 {
+  font-size: 12vw;
+  margin: 0;
+}
+
+audio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 2vw;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  transition: 1s;
+}
+
+input {
+  padding: 2vw;
+  font-size: 2.5vw;
+  border-radius: 4vw;
+  border: none;
+  margin: 1vw;
+  z-index: 10;
+  background: var(--dark2);
+  color: var(--orange);
+}
+
+input::selection {
+  background: var(--black);
+}
+
+#metadata {
+  color: var(--yellow);
+  padding: 1vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.red {
+  color: var(--red);
+}
+
+@media (min-width: 800px) {
+  h1 {
+    font-size: 8vw;
+  }
+}

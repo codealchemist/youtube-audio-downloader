@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>YouTube Audio Downloader</title>
+    <link rel="stylesheet" href="index.css">
+  </head>
+  <body>
+    <div>
+      <h1 class="red">YouTube</h1>
+      <h1>Audio Downloader</h1>
+    </div>
+    <input
+      name="video-input"
+      id="video-input"
+      placeholder="Paste YouTube link or video id here"
+      autofocus
+    />
+
+    <div id="metadata"></div>
+    <audio id="audio" controls></audio>
+
+    <!-- Loading start -->
+    <div id="loading-container">
+      <div class="loading">
+        <div>
+          <div></div>
+        </div>
+        
+        <i><i></i></i>
+      </div>
+      <div class="loading loading-alt">
+        <div>
+          <div></div>
+        </div>
+        
+        <i><i></i></i>
+      </div>
+    </div>
+    <!-- Loading end -->
+    <script src="renderer.js"></script>
+  </body>
+</html>

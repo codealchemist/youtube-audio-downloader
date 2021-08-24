@@ -1,0 +1,13 @@
+:root {
+  --black: #000;
+  --black-transparent: rgba(0, 0, 0, 0.25);
+  --dark1: #370617;
+  --dark2:  #6a040f;
+  --red: #d00000;
+  --red1: #9d0208;
+  --red2: #dc2f02;
+  --orange: #e85d04;
+  --orange1: #f48c06;
+  --yellow: #ffba08;
+  --white: #f1faee;
+}
