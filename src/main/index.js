@@ -1,67 +1,95 @@
-const { app, BrowserWindow, dialog } = require('electron')
-const path = require('path')
-const Store = require('electron-store')
-const store = new Store()
-require('./setup-ffmpeg')
-require('./bridge')
-const yas = require('youtube-audio-server')
+import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
+import squirrelStartup from 'electron-squirrel-startup'
+import Store from 'electron-store'
+import ffmpegPath from 'ffmpeg-static'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { downloader, parseVideoId } from 'youtube-audio-server'
+import { createDownloadService } from './download-service.js'
+import { changeFolder, defaultFolder, resolveFolder } from './folder.js'
+import { registerIpc } from './ipc.js'
+import { denyPermissions, hardenContents, isTrustedSender, windowOptions } from './security.js'
+import { configureTools, missingTools, toolStatus } from './tools.js'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const indexFile = path.join(here, '../renderer/index.html')
+const preloadFile = path.join(here, '../preload/preload.cjs')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
-  app.quit();
+if (squirrelStartup) app.quit()
+
+// Tests run the app with their own settings and download folder.
+const testEnv = app.isPackaged ? {} : process.env
+if (testEnv.YAS_USER_DATA) app.setPath('userData', testEnv.YAS_USER_DATA)
+
+configureTools({ ffmpegPath })
+downloader.youtube.quiet = true
+
+const store = new Store({
+  schema: { audioFolder: { type: 'string' } }
+})
+const service = createDownloadService({ downloader, parseVideoId })
+let mainWindow = null
+
+const chooseFolder = async () => {
+  const options = { title: 'Choose where to save audio', properties: ['openDirectory', 'createDirectory'] }
+  const result = mainWindow
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options)
+  return result.canceled ? null : result.filePaths[0]
 }
 
-const createWindow = async () => {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 840,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    }
-  });
+const setFolder = folder => {
+  downloader.setFolder(folder)
+  return folder
+}
 
-  // TODO: Inform user before forcing first time folder selection.
-  // TODO: Provide UI to change folder.
-  // Set audio download folder.
-  let audioFolder = store.get('audioFolder')
-  if (!audioFolder) {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openDirectory', 'createDirectory']
-    })
-    audioFolder = result.filePaths?.[0]
-    console.log('Selected audio folder:', audioFolder)
-    store.set('audioFolder', audioFolder)
-  }
-  yas.downloader.setFolder(audioFolder)
+registerIpc({
+  ipcMain,
+  service,
+  isTrusted: event => isTrustedSender(event, indexFile),
+  getState: () => ({
+    folder: downloader.youtube.audioFolder,
+    missing: missingTools(toolStatus())
+  }),
+  changeFolder: async () => {
+    if (service.isBusy()) return null
+    const folder = await changeFolder({ store, choose: chooseFolder })
+    return folder && setFolder(folder)
+  },
+  showFile: file => shell.showItemInFolder(file)
+})
 
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+app.on('web-contents-created', (event, contents) => hardenContents(contents))
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
-};
+async function createWindow () {
+  mainWindow = new BrowserWindow(windowOptions(preloadFile))
+  mainWindow.on('closed', () => { mainWindow = null })
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+  setFolder(await resolveFolder({
+    store,
+    choose: chooseFolder,
+    fallback: defaultFolder(app.getPath('music')),
+    override: testEnv.YAS_AUDIO_FOLDER
+  }))
+
+  await mainWindow.loadFile(indexFile)
+}
+
+app.whenReady().then(() => {
+  denyPermissions(session.defaultSession)
+  createWindow()
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+  if (process.platform !== 'darwin') app.quit()
+})
 
 app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})

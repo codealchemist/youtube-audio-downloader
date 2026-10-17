@@ -2,10 +2,19 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src file:; base-uri 'none'; form-action 'none'"
+    >
     <title>YouTube Audio Downloader</title>
     <link rel="stylesheet" href="index.css">
   </head>
   <body>
+    <header id="folder-bar">
+      <span>Saving to <span id="folder" data-testid="folder"></span></span>
+      <button id="change-folder" type="button">Change folder</button>
+    </header>
+
     <div>
       <h1 class="red">YouTube</h1>
       <h1>Audio Downloader</h1>
@@ -14,30 +23,39 @@
       name="video-input"
       id="video-input"
       placeholder="Paste YouTube link or video id here"
+      aria-label="YouTube link or video id"
+      autocomplete="off"
+      spellcheck="false"
       autofocus
     />
 
-    <div id="metadata"></div>
+    <div id="status">
+      <span id="metadata" data-testid="metadata" role="status"></span>
+      <span id="progress" data-testid="progress"></span>
+      <button id="show-file" type="button" hidden>Show in folder</button>
+    </div>
+    <p id="warning" data-testid="warning" role="alert" hidden></p>
     <audio id="audio" controls></audio>
 
     <!-- Loading start -->
-    <div id="loading-container">
+    <div id="loading-container" data-testid="loading">
       <div class="loading">
         <div>
           <div></div>
         </div>
-        
+
         <i><i></i></i>
       </div>
       <div class="loading loading-alt">
         <div>
           <div></div>
         </div>
-        
+
         <i><i></i></i>
       </div>
     </div>
     <!-- Loading end -->
+    <script src="format.js"></script>
     <script src="renderer.js"></script>
   </body>
 </html>

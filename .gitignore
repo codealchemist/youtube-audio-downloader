@@ -87,3 +87,7 @@ typings/
 
 # Electron-Forge
 out/
+
+# Tests
+test-results/
+playwright-report/
