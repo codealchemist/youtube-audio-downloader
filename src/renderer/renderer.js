@@ -13,6 +13,8 @@ const $showFile = document.querySelector('#show-file')
 const $warning = document.querySelector('#warning')
 
 let lastFile = null
+let folderWarning = null
+let toolsWarning = ''
 
 $videoInput.addEventListener('paste', event => {
   const text = event.clipboardData.getData('text')
@@ -25,8 +27,11 @@ $videoInput.addEventListener('keydown', event => {
 })
 
 $changeFolder.addEventListener('click', async () => {
-  const folder = await window.yas.changeFolder()
-  if (folder) setFolder(folder)
+  const result = await window.yas.changeFolder()
+  if (!result) return
+  setFolder(result.folder)
+  folderWarning = result.warning
+  showWarning()
 })
 
 $showFile.addEventListener('click', () => {
@@ -78,9 +83,15 @@ function setLoading (enabled) {
   $loading.style.opacity = enabled ? 1 : 0
 }
 
-window.yas.getState().then(({ folder, missing }) => {
-  setFolder(folder)
-  const warning = missingToolsMessage(missing)
+function showWarning () {
+  const warning = [folderWarning, toolsWarning].filter(Boolean).join(' ')
   $warning.textContent = warning
   $warning.hidden = !warning
+}
+
+window.yas.getState().then(state => {
+  setFolder(state.folder)
+  folderWarning = state.folderWarning
+  toolsWarning = missingToolsMessage(state.missing)
+  showWarning()
 })

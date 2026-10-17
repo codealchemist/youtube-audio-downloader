@@ -6,7 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { downloader, parseVideoId } from 'youtube-audio-server'
 import { createDownloadService } from './download-service.js'
-import { changeFolder, defaultFolder, resolveFolder } from './folder.js'
+import { applyFolder, changeFolder, defaultFolder, resolveFolder } from './folder.js'
 import { registerIpc } from './ipc.js'
 import { denyPermissions, hardenContents, isTrustedSender, windowOptions } from './security.js'
 import { configureTools, missingTools, toolStatus } from './tools.js'
@@ -30,6 +30,7 @@ const store = new Store({
 })
 const service = createDownloadService({ downloader, parseVideoId })
 let mainWindow = null
+let folderWarning = null
 
 const chooseFolder = async () => {
   const options = { title: 'Choose where to save audio', properties: ['openDirectory', 'createDirectory'] }
@@ -39,9 +40,12 @@ const chooseFolder = async () => {
   return result.canceled ? null : result.filePaths[0]
 }
 
-const setFolder = folder => {
-  downloader.setFolder(folder)
-  return folder
+const fallbackFolder = () => defaultFolder(app.getPath('music'))
+
+const setFolder = (folder, fallback = fallbackFolder()) => {
+  const result = applyFolder({ downloader, folder, fallback })
+  folderWarning = result.warning
+  return result
 }
 
 registerIpc({
@@ -50,12 +54,14 @@ registerIpc({
   isTrusted: event => isTrustedSender(event, indexFile),
   getState: () => ({
     folder: downloader.youtube.audioFolder,
+    folderWarning,
     missing: missingTools(toolStatus())
   }),
   changeFolder: async () => {
     if (service.isBusy()) return null
-    const folder = await changeFolder({ store, choose: chooseFolder })
-    return folder && setFolder(folder)
+    // If the new folder can't be used, keep saving where we were.
+    const current = downloader.youtube.audioFolder
+    return changeFolder({ store, choose: chooseFolder, apply: folder => setFolder(folder, current) })
   },
   showFile: file => shell.showItemInFolder(file)
 })
@@ -69,7 +75,7 @@ async function createWindow () {
   setFolder(await resolveFolder({
     store,
     choose: chooseFolder,
-    fallback: defaultFolder(app.getPath('music')),
+    fallback: fallbackFolder(),
     override: testEnv.YAS_AUDIO_FOLDER
   }))
 
