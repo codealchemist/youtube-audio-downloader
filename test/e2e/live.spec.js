@@ -3,7 +3,7 @@
 // YAS_LIVE=1 npm run test:e2e
 import fs from 'node:fs'
 import { expect, test } from '@playwright/test'
-import { launchApp } from './app.js'
+import { launchApp, videoInput } from './app.js'
 
 test.skip(!process.env.YAS_LIVE, 'Set YAS_LIVE=1 to download from YouTube')
 
@@ -11,7 +11,7 @@ test('downloads a real video', async () => {
   // "Me at the zoo", 19 seconds.
   const run = await launchApp({ env: { YTDLP_PATH: '' } })
   try {
-    const input = run.window.getByPlaceholder('Paste YouTube link or video id here')
+    const input = videoInput(run.window)
     await input.fill('https://www.youtube.com/watch?v=jNQXAC9IVRw')
     await input.press('Enter')
     await expect(run.window.getByRole('button', { name: 'Show in folder' })).toBeVisible({ timeout: 120 * 1000 })

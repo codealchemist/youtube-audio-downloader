@@ -25,24 +25,17 @@ jobs:
       - run: npm run lint
       - run: npm test
       # Electron's sandbox needs unprivileged user namespaces, which Ubuntu
-      # restricts by default, and a display.
-      - name: End-to-end tests (Linux)
+      # restricts by default, and a display. The rpm maker needs rpmbuild.
+      - name: Set up Linux
         if: runner.os == 'Linux'
         run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-          xvfb-run --auto-servernum npm run test:e2e
-      - name: End-to-end tests
-        if: runner.os != 'Linux'
-        run: npm run test:e2e
-      - name: Build installers
-        if: runner.os != 'Linux'
-        run: npm run make
-      - name: Build installers (Linux)
-        if: runner.os == 'Linux'
-        run: |
           sudo apt-get update
           sudo apt-get install -y rpm
-          npm run make
+      - name: End-to-end tests
+        run: ${{ runner.os == 'Linux' && 'xvfb-run --auto-servernum ' || '' }}npm run test:e2e
+      - name: Build installers
+        run: npm run make
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

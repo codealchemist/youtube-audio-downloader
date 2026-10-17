@@ -35,17 +35,18 @@ function setup (overrides = {}) {
   return { ...deps, call: (channel, event, ...args) => ipcMain.handlers[channel](event, ...args) }
 }
 
+// The channels the page invokes; the rest are events sent to it.
+const INVOKE_CHANNELS = [CHANNELS.download, CHANNELS.getState, CHANNELS.changeFolder, CHANNELS.showFile]
+
 describe('registerIpc', () => {
   it('registers every channel', () => {
     const { ipcMain } = setup()
-    expect(Object.keys(ipcMain.handlers).sort()).toEqual(
-      [CHANNELS.download, CHANNELS.getState, CHANNELS.changeFolder, CHANNELS.showFile].sort()
-    )
+    expect(Object.keys(ipcMain.handlers).sort()).toEqual([...INVOKE_CHANNELS].sort())
   })
 
   it('refuses untrusted senders', async () => {
     const { call, service } = setup()
-    for (const channel of [CHANNELS.download, CHANNELS.getState, CHANNELS.changeFolder, CHANNELS.showFile]) {
+    for (const channel of INVOKE_CHANNELS) {
       await expect(call(channel, fakeEvent({ trusted: false }), 'x')).rejects.toThrow('Untrusted sender')
     }
     expect(service.download).not.toHaveBeenCalled()

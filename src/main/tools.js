@@ -6,8 +6,17 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-export const REQUIRED_TOOLS = ['yt-dlp', 'ffmpeg']
-export const OPTIONAL_TOOLS = ['deno']
+// Each tool, whether downloads need it, and the variable that overrides its path.
+const TOOLS = {
+  'yt-dlp': { required: true, override: 'YTDLP_PATH' },
+  ffmpeg: { required: true, override: 'FFMPEG_PATH' },
+  deno: { required: false }
+}
+
+const pathApiFor = platform => (platform === 'win32' ? path.win32 : path.posix)
+
+// Windows keeps the variable as `Path`.
+const currentPath = env => env.PATH ?? env.Path ?? ''
 
 export function extraPathDirs ({ platform = process.platform, env = process.env, home = os.homedir() } = {}) {
   if (platform === 'win32') {
@@ -31,8 +40,8 @@ export function extraPathDirs ({ platform = process.platform, env = process.env,
 
 // PATH with the extra folders appended, without duplicates.
 export function augmentedPath ({ platform = process.platform, env = process.env, home } = {}) {
-  const delimiter = platform === 'win32' ? ';' : ':'
-  const current = (env.PATH ?? env.Path ?? '').split(delimiter).filter(Boolean)
+  const { delimiter } = pathApiFor(platform)
+  const current = currentPath(env).split(delimiter).filter(Boolean)
   const dirs = [...current]
   for (const dir of extraPathDirs({ platform, env, home })) {
     if (!dirs.includes(dir)) dirs.push(dir)
@@ -48,8 +57,7 @@ export function unpackedPath (file) {
 
 // Returns the full path of `name` in `searchPath`, or null.
 export function findExecutable (name, { platform = process.platform, searchPath = '', env = process.env, isFile = defaultIsFile } = {}) {
-  const pathApi = platform === 'win32' ? path.win32 : path.posix
-  const delimiter = platform === 'win32' ? ';' : ':'
+  const pathApi = pathApiFor(platform)
   const extensions = platform === 'win32'
     ? ['', ...(env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';').filter(Boolean)]
     : ['']
@@ -57,7 +65,7 @@ export function findExecutable (name, { platform = process.platform, searchPath 
   if (pathApi.isAbsolute(name)) {
     return extensions.map(ext => name + ext).find(isFile) ?? null
   }
-  for (const dir of searchPath.split(delimiter).filter(Boolean)) {
+  for (const dir of searchPath.split(pathApi.delimiter).filter(Boolean)) {
     for (const ext of extensions) {
       const candidate = pathApi.join(dir, name + ext)
       if (isFile(candidate)) return candidate
@@ -75,30 +83,26 @@ function defaultIsFile (file) {
 }
 
 // Points youtube-audio-server at the bundled ffmpeg (unless FFMPEG_PATH is
-// already set) and extends PATH so yt-dlp and Deno are found. Returns the
-// environment changes, which `env` receives.
+// already set) and extends PATH so yt-dlp and Deno are found.
 export function configureTools ({ env = process.env, platform = process.platform, ffmpegPath, home } = {}) {
-  const changes = { PATH: augmentedPath({ platform, env, home }) }
-  if (!env.FFMPEG_PATH && ffmpegPath) changes.FFMPEG_PATH = unpackedPath(ffmpegPath)
-  // Windows keeps the variable as `Path`; writing `PATH` updates the same one.
-  Object.assign(env, changes)
-  return changes
+  // On Windows, writing `PATH` updates the same variable as `Path`.
+  env.PATH = augmentedPath({ platform, env, home })
+  if (!env.FFMPEG_PATH && ffmpegPath) env.FFMPEG_PATH = unpackedPath(ffmpegPath)
 }
 
 // Which tools can be found, so the window can explain what's missing.
 export function toolStatus ({ env = process.env, platform = process.platform, isFile } = {}) {
-  const searchPath = env.PATH ?? env.Path ?? ''
-  const locate = (name, override) => findExecutable(override || name, { platform, searchPath, env, isFile })
-  return {
-    'yt-dlp': locate('yt-dlp', env.YTDLP_PATH),
-    ffmpeg: locate('ffmpeg', env.FFMPEG_PATH),
-    deno: locate('deno')
-  }
+  const searchPath = currentPath(env)
+  return Object.fromEntries(Object.entries(TOOLS).map(([name, { override }]) => [
+    name,
+    findExecutable((override && env[override]) || name, { platform, searchPath, env, isFile })
+  ]))
 }
 
 export function missingTools (status) {
+  const missing = Object.keys(TOOLS).filter(name => !status[name])
   return {
-    required: REQUIRED_TOOLS.filter(name => !status[name]),
-    optional: OPTIONAL_TOOLS.filter(name => !status[name])
+    required: missing.filter(name => TOOLS[name].required),
+    optional: missing.filter(name => !TOOLS[name].required)
   }
 }

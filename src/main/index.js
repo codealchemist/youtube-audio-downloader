@@ -6,7 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { downloader, parseVideoId } from 'youtube-audio-server'
 import { createDownloadService } from './download-service.js'
-import { applyFolder, changeFolder, defaultFolder, resolveFolder } from './folder.js'
+import { FOLDER_KEY, applyFolder, changeFolder, defaultFolder, resolveFolder } from './folder.js'
 import { registerIpc } from './ipc.js'
 import { denyPermissions, hardenContents, isTrustedSender, windowOptions } from './security.js'
 import { configureTools, missingTools, toolStatus } from './tools.js'
@@ -26,7 +26,7 @@ configureTools({ ffmpegPath })
 downloader.youtube.quiet = true
 
 const store = new Store({
-  schema: { audioFolder: { type: 'string' } }
+  schema: { [FOLDER_KEY]: { type: 'string' } }
 })
 const service = createDownloadService({ downloader, parseVideoId })
 let mainWindow = null
@@ -72,12 +72,13 @@ async function createWindow () {
   mainWindow = new BrowserWindow(windowOptions(preloadFile))
   mainWindow.on('closed', () => { mainWindow = null })
 
-  setFolder(await resolveFolder({
+  await resolveFolder({
     store,
     choose: chooseFolder,
+    apply: folder => setFolder(folder),
     fallback: fallbackFolder(),
     override: testEnv.YAS_AUDIO_FOLDER
-  }))
+  })
 
   await mainWindow.loadFile(indexFile)
 }

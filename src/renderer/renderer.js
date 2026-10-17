@@ -79,8 +79,7 @@ function setFolder (folder) {
 function setLoading (enabled) {
   $videoInput.disabled = enabled
   $changeFolder.disabled = enabled
-  $loading.style.display = enabled ? 'block' : 'none'
-  $loading.style.opacity = enabled ? 1 : 0
+  $loading.hidden = !enabled
 }
 
 function showWarning () {

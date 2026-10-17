@@ -10,10 +10,9 @@ export const MESSAGES = {
 }
 
 export class DownloadError extends Error {
-  constructor (message, code) {
+  constructor (message) {
     super(message)
     this.name = 'DownloadError'
-    this.code = code
   }
 }
 
@@ -30,8 +29,8 @@ export function createDownloadService ({ downloader, parseVideoId, log = console
 
   function download (input, { onMetadata, onProgress } = {}) {
     const id = parseVideoId(input)
-    if (!id) return Promise.reject(new DownloadError(MESSAGES.INVALID, 'INVALID_ID'))
-    if (running) return Promise.reject(new DownloadError(MESSAGES.BUSY, 'BUSY'))
+    if (!id) return Promise.reject(new DownloadError(MESSAGES.INVALID))
+    if (running) return Promise.reject(new DownloadError(MESSAGES.BUSY))
     running = true
 
     return new Promise((resolve, reject) => {

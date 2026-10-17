@@ -54,7 +54,7 @@ describe('createDownloadService', () => {
     async input => {
       const downloader = fakeDownloader(() => {})
       const service = createDownloadService({ downloader, parseVideoId, log: quietLog })
-      await expect(service.download(input)).rejects.toMatchObject({ code: 'INVALID_ID', message: MESSAGES.INVALID })
+      await expect(service.download(input)).rejects.toMatchObject({ name: 'DownloadError', message: MESSAGES.INVALID })
       expect(downloader.calls).toHaveLength(0)
     }
   )
@@ -66,7 +66,7 @@ describe('createDownloadService', () => {
 
     const first = service.download(ID)
     expect(service.isBusy()).toBe(true)
-    await expect(service.download(ID)).rejects.toMatchObject({ code: 'BUSY' })
+    await expect(service.download(ID)).rejects.toMatchObject({ name: 'DownloadError', message: MESSAGES.BUSY })
 
     finish()
     await first
@@ -86,7 +86,7 @@ describe('createDownloadService', () => {
 describe('userMessage', () => {
   it('shows youtube-audio-server and service messages', () => {
     expect(userMessage(Object.assign(new Error('Video unavailable'), { name: 'YasError' }))).toBe('Video unavailable')
-    expect(userMessage(new DownloadError(MESSAGES.BUSY, 'BUSY'))).toBe(MESSAGES.BUSY)
+    expect(userMessage(new DownloadError(MESSAGES.BUSY))).toBe(MESSAGES.BUSY)
   })
 
   it('hides other errors', () => {

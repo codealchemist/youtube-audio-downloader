@@ -4,8 +4,6 @@
   width: 3em;
   height: 3em;
   flex-shrink: 0;
-  display: none;
-  opacity: 0;
 }
 
 .loading {

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
-import { canFakeYtdlp, launchApp } from './app.js'
+import { canFakeYtdlp, launchApp, videoInput } from './app.js'
 
 let run
 
@@ -18,7 +18,7 @@ test.describe('window', () => {
   test('shows the downloader and the download folder', async () => {
     const { window, audioFolder } = run
     await expect(window).toHaveTitle('YouTube Audio Downloader')
-    await expect(window.getByPlaceholder('Paste YouTube link or video id here')).toBeVisible()
+    await expect(videoInput(window)).toBeVisible()
     await expect(window.getByTestId('folder')).toHaveText(audioFolder)
     expect(fs.existsSync(audioFolder)).toBe(true)
   })
@@ -69,7 +69,7 @@ test.describe('window', () => {
 
   test('rejects input that is not a YouTube video', async () => {
     const { window } = run
-    const input = window.getByPlaceholder('Paste YouTube link or video id here')
+    const input = videoInput(window)
     await input.fill('https://example.com/watch?v=dQw4w9WgXcQ')
     await input.press('Enter')
     await expect(window.getByTestId('metadata')).toHaveText('ERROR: That is not a YouTube link or video id.')
@@ -86,7 +86,7 @@ test.describe('downloading', () => {
 
   test('saves a video as mp3 and plays it', async () => {
     const { window, audioFolder } = run
-    const input = window.getByPlaceholder('Paste YouTube link or video id here')
+    const input = videoInput(window)
     await input.fill('https://www.youtube.com/watch?v=e2eTestSong')
     await input.press('Enter')
 
@@ -109,7 +109,7 @@ test.describe('downloading', () => {
 
   test('shows when a video is unavailable', async () => {
     const { window, audioFolder } = run
-    const input = window.getByPlaceholder('Paste YouTube link or video id here')
+    const input = videoInput(window)
     await input.fill('e2eMissing0')
     await input.press('Enter')
     await expect(window.getByTestId('metadata')).toHaveText('ERROR: Video unavailable', { timeout: 30 * 1000 })

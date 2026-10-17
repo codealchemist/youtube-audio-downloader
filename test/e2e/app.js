@@ -12,6 +12,8 @@ export const FAKE_YTDLP = path.join(root, 'test/e2e/fixtures/fake-yt-dlp')
 // never uses one, so the fake can't stand in for yt-dlp on Windows.
 export const canFakeYtdlp = process.platform !== 'win32'
 
+export const videoInput = window => window.getByPlaceholder('Paste YouTube link or video id here')
+
 export async function launchApp ({ env = {} } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yasapp-e2e-'))
   const audioFolder = path.join(dir, 'audio')
