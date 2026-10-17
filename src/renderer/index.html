@@ -30,6 +30,24 @@
     />
 
     <div id="status">
+      <!-- Loading start -->
+      <div id="loading-container" data-testid="loading">
+        <div class="loading">
+          <div>
+            <div></div>
+          </div>
+
+          <i><i></i></i>
+        </div>
+        <div class="loading loading-alt">
+          <div>
+            <div></div>
+          </div>
+
+          <i><i></i></i>
+        </div>
+      </div>
+      <!-- Loading end -->
       <span id="metadata" data-testid="metadata" role="status"></span>
       <span id="progress" data-testid="progress"></span>
       <button id="show-file" type="button" hidden>Show in folder</button>
@@ -37,24 +55,6 @@
     <p id="warning" data-testid="warning" role="alert" hidden></p>
     <audio id="audio" controls></audio>
 
-    <!-- Loading start -->
-    <div id="loading-container" data-testid="loading">
-      <div class="loading">
-        <div>
-          <div></div>
-        </div>
-
-        <i><i></i></i>
-      </div>
-      <div class="loading loading-alt">
-        <div>
-          <div></div>
-        </div>
-
-        <i><i></i></i>
-      </div>
-    </div>
-    <!-- Loading end -->
     <script src="format.js"></script>
     <script src="renderer.js"></script>
   </body>
