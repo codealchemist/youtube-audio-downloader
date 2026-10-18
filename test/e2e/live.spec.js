@@ -14,7 +14,7 @@ test('downloads a real video', async () => {
     const input = videoInput(run.window)
     await input.fill('https://www.youtube.com/watch?v=jNQXAC9IVRw')
     await input.press('Enter')
-    await expect(run.window.getByRole('button', { name: 'Show in folder' })).toBeVisible({ timeout: 120 * 1000 })
+    await expect(run.window.getByTestId('queue').locator('.job')).toHaveAttribute('data-status', 'done', { timeout: 120 * 1000 })
     const [file] = fs.readdirSync(run.audioFolder)
     expect(file).toMatch(/\.mp3$/)
   } finally {

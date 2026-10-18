@@ -1,9 +1,12 @@
 // Stands in for yt-dlp in end-to-end tests, so they don't depend on YouTube.
 // Answers metadata requests with fixed JSON and "downloads" a short tone as
 // WAV, which the real (bundled) ffmpeg then converts to mp3.
+// FAKE_YTDLP_DELAY_MS slows the download down, so tests can see the queue.
 const fs = require('node:fs')
 
 const UNAVAILABLE = 'e2eMissing0'
+const TITLES = { e2eTestSong: 'E2E Test Song <b>not bold</b>' }
+const delay = Number(process.env.FAKE_YTDLP_DELAY_MS) || 0
 const args = process.argv.slice(2)
 
 function videoId () {
@@ -44,7 +47,7 @@ if (id === UNAVAILABLE) {
 if (args.includes('--dump-single-json')) {
   process.stdout.write(JSON.stringify({
     id,
-    title: 'E2E Test Song <b>not bold</b>',
+    title: TITLES[id] ?? `Song ${id}`,
     description: 'A tone',
     artist: 'Test Artist',
     webpage_url: `https://www.youtube.com/watch?v=${id}`
@@ -52,6 +55,8 @@ if (args.includes('--dump-single-json')) {
 } else {
   const audio = tone()
   process.stderr.write(`[yas-progress] ${audio.length / 2} ${audio.length} NA 1000 1\n`)
-  process.stderr.write(`[yas-progress] ${audio.length} ${audio.length} NA 1000 0\n`)
-  process.stdout.write(audio)
+  setTimeout(() => {
+    process.stderr.write(`[yas-progress] ${audio.length} ${audio.length} NA 1000 0\n`)
+    process.stdout.write(audio)
+  }, delay)
 }

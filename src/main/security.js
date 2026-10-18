@@ -4,9 +4,11 @@ import { fileURLToPath } from 'node:url'
 
 export function windowOptions (preload) {
   return {
-    width: 840,
-    height: 600,
-    backgroundColor: '#000000',
+    width: 1040,
+    height: 720,
+    minWidth: 640,
+    minHeight: 520,
+    backgroundColor: '#0c0c10',
     webPreferences: {
       preload,
       contextIsolation: true,

@@ -1,6 +1,6 @@
 // Runs one download at a time through youtube-audio-server's downloader.
 // The downloader keeps a single set of callbacks, so overlapping downloads
-// would report to the wrong request; the window disables input meanwhile.
+// would report to the wrong request; the queue (queue.js) waits its turn.
 import { pathToFileURL } from 'node:url'
 
 export const MESSAGES = {
@@ -25,7 +25,6 @@ export function userMessage (error) {
 
 export function createDownloadService ({ downloader, parseVideoId, log = console }) {
   let running = false
-  const files = new Set()
 
   function download (input, { onMetadata, onProgress } = {}) {
     const id = parseVideoId(input)
@@ -36,7 +35,6 @@ export function createDownloadService ({ downloader, parseVideoId, log = console
     return new Promise((resolve, reject) => {
       downloader
         .onSuccess(({ file, filename }) => {
-          files.add(file)
           resolve({ id, file, filename, url: pathToFileURL(file).href })
         })
         .onError(({ error }) => {
@@ -53,8 +51,6 @@ export function createDownloadService ({ downloader, parseVideoId, log = console
 
   return {
     download,
-    isBusy: () => running,
-    // Only files this service saved may be revealed in the file manager.
-    isDownloaded: file => files.has(file)
+    isBusy: () => running
   }
 }

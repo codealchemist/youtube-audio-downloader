@@ -3,12 +3,21 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 const CHANNELS = {
-  download: 'yas:download',
-  metadata: 'yas:metadata',
-  progress: 'yas:progress',
   getState: 'yas:get-state',
   changeFolder: 'yas:change-folder',
-  showFile: 'yas:show-file'
+  getQueue: 'yas:queue-get',
+  addToQueue: 'yas:queue-add',
+  removeFromQueue: 'yas:queue-remove',
+  retryDownload: 'yas:queue-retry',
+  clearFinished: 'yas:queue-clear',
+  listSongs: 'yas:songs-list',
+  getCover: 'yas:song-cover',
+  renameSong: 'yas:song-rename',
+  deleteSong: 'yas:song-delete',
+  shareSong: 'yas:song-share',
+  showSong: 'yas:song-show',
+  queueChanged: 'yas:queue-changed',
+  songsChanged: 'yas:songs-changed'
 }
 
 // Subscribes to a main-process event and returns a function that unsubscribes.
@@ -19,11 +28,22 @@ function subscribe (channel, callback) {
   return () => ipcRenderer.removeListener(channel, listener)
 }
 
+const invoke = (channel, ...args) => ipcRenderer.invoke(channel, ...args.map(String))
+
 contextBridge.exposeInMainWorld('yas', {
-  download: input => ipcRenderer.invoke(CHANNELS.download, String(input)),
-  getState: () => ipcRenderer.invoke(CHANNELS.getState),
-  changeFolder: () => ipcRenderer.invoke(CHANNELS.changeFolder),
-  showFile: file => ipcRenderer.invoke(CHANNELS.showFile, String(file)),
-  onMetadata: callback => subscribe(CHANNELS.metadata, callback),
-  onProgress: callback => subscribe(CHANNELS.progress, callback)
+  getState: () => invoke(CHANNELS.getState),
+  changeFolder: () => invoke(CHANNELS.changeFolder),
+  getQueue: () => invoke(CHANNELS.getQueue),
+  addToQueue: input => invoke(CHANNELS.addToQueue, input),
+  removeFromQueue: key => invoke(CHANNELS.removeFromQueue, key),
+  retryDownload: key => invoke(CHANNELS.retryDownload, key),
+  clearFinished: () => invoke(CHANNELS.clearFinished),
+  listSongs: () => invoke(CHANNELS.listSongs),
+  getCover: name => invoke(CHANNELS.getCover, name),
+  renameSong: (name, title) => invoke(CHANNELS.renameSong, name, title),
+  deleteSong: name => invoke(CHANNELS.deleteSong, name),
+  shareSong: name => invoke(CHANNELS.shareSong, name),
+  showSong: name => invoke(CHANNELS.showSong, name),
+  onQueueChanged: callback => subscribe(CHANNELS.queueChanged, callback),
+  onSongsChanged: callback => subscribe(CHANNELS.songsChanged, callback)
 })

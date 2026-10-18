@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, session, shell } from 'electron'
 import squirrelStartup from 'electron-squirrel-startup'
 import Store from 'electron-store'
 import ffmpegPath from 'ffmpeg-static'
@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url'
 import { downloader, parseVideoId } from 'youtube-audio-server'
 import { createDownloadService } from './download-service.js'
 import { FOLDER_KEY, applyFolder, changeFolder, defaultFolder, resolveFolder } from './folder.js'
-import { registerIpc } from './ipc.js'
+import { CHANNELS, registerIpc } from './ipc.js'
+import { createLibrary, shareMenuTemplate } from './library.js'
+import { createQueue } from './queue.js'
 import { denyPermissions, hardenContents, isTrustedSender, windowOptions } from './security.js'
 import { configureTools, missingTools, toolStatus } from './tools.js'
 
@@ -28,9 +30,55 @@ downloader.youtube.quiet = true
 const store = new Store({
   schema: { [FOLDER_KEY]: { type: 'string' } }
 })
-const service = createDownloadService({ downloader, parseVideoId })
 let mainWindow = null
 let folderWarning = null
+
+// Events for the page, dropped while there is no window.
+const notify = (channel, data) => {
+  const contents = mainWindow?.webContents
+  if (contents && !contents.isDestroyed()) contents.send(channel, data)
+}
+
+const service = createDownloadService({ downloader, parseVideoId })
+const queue = createQueue({
+  service,
+  parseVideoId,
+  onChange: items => notify(CHANNELS.queueChanged, items),
+  onSaved: () => notify(CHANNELS.songsChanged)
+})
+const library = createLibrary({
+  getFolder: () => downloader.youtube.audioFolder,
+  trashItem: file => shell.trashItem(file)
+})
+
+const TRASH = { darwin: 'Trash', win32: 'Recycle Bin' }
+
+async function confirmDelete (song) {
+  const trash = TRASH[process.platform] ?? 'trash'
+  const options = {
+    type: 'question',
+    buttons: [`Move to ${trash}`, 'Cancel'],
+    defaultId: 0,
+    cancelId: 1,
+    message: `Delete “${song.title}”?`,
+    detail: `The file is moved to the ${trash}.`
+  }
+  const { response } = mainWindow
+    ? await dialog.showMessageBox(mainWindow, options)
+    : await dialog.showMessageBox(options)
+  return response === 0
+}
+
+function shareSong ({ file, link }) {
+  const template = shareMenuTemplate({
+    platform: process.platform,
+    file,
+    link,
+    copyText: value => clipboard.writeText(value),
+    showItem: item => shell.showItemInFolder(item)
+  })
+  Menu.buildFromTemplate(template).popup(mainWindow ? { window: mainWindow } : {})
+}
 
 const chooseFolder = async () => {
   const options = { title: 'Choose where to save audio', properties: ['openDirectory', 'createDirectory'] }
@@ -50,7 +98,6 @@ const setFolder = (folder, fallback = fallbackFolder()) => {
 
 registerIpc({
   ipcMain,
-  service,
   isTrusted: event => isTrustedSender(event, indexFile),
   getState: () => ({
     folder: downloader.youtube.audioFolder,
@@ -63,7 +110,12 @@ registerIpc({
     const current = downloader.youtube.audioFolder
     return changeFolder({ store, choose: chooseFolder, apply: folder => setFolder(folder, current) })
   },
-  showFile: file => shell.showItemInFolder(file)
+  queue,
+  library,
+  confirmDelete,
+  shareSong,
+  showSong: file => shell.showItemInFolder(file),
+  songsChanged: () => notify(CHANNELS.songsChanged)
 })
 
 app.on('web-contents-created', (event, contents) => hardenContents(contents))
