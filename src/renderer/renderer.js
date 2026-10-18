@@ -505,6 +505,7 @@ api.onSongsChanged(refreshSongs)
 window.addEventListener('focus', refreshSongs)
 
 api.getState().then(appState => {
+  $('#version').textContent = appState.version ? `v${appState.version}` : ''
   setFolder(appState.folder)
   state.folderWarning = appState.folderWarning
   state.toolsWarning = missingToolsMessage(appState.missing)

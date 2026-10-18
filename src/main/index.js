@@ -100,6 +100,7 @@ registerIpc({
   ipcMain,
   isTrusted: event => isTrustedSender(event, indexFile),
   getState: () => ({
+    version: app.getVersion(),
     folder: downloader.youtube.audioFolder,
     folderWarning,
     missing: missingTools(toolStatus())

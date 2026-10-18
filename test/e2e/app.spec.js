@@ -26,6 +26,8 @@ test.describe('window', () => {
     await expect(window).toHaveTitle('YouTube Audio Downloader')
     await expect(videoInput(window)).toBeVisible()
     await expect(window.getByTestId('folder')).toHaveText(audioFolder)
+    const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+    await expect(window.getByTestId('version')).toHaveText(`v${version}`)
     await expect(window.getByText('No songs yet.')).toBeVisible()
     await expect(window.getByTestId('now-title')).toHaveText('Nothing playing')
     expect(fs.existsSync(audioFolder)).toBe(true)
