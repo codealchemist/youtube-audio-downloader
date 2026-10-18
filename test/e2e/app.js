@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { _electron as electron } from '@playwright/test'
+import { makeSong } from '../helpers/make-song.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 export const FAKE_YTDLP = path.join(root, 'test/e2e/fixtures/fake-yt-dlp')
@@ -12,11 +13,18 @@ export const FAKE_YTDLP = path.join(root, 'test/e2e/fixtures/fake-yt-dlp')
 // never uses one, so the fake can't stand in for yt-dlp on Windows.
 export const canFakeYtdlp = process.platform !== 'win32'
 
-export const videoInput = window => window.getByPlaceholder('Paste YouTube link or video id here')
+export const videoInput = window => window.getByPlaceholder('Paste YouTube links or video ids')
 
-export async function launchApp ({ env = {} } = {}) {
+// `songs` are written to the download folder first (see makeSong), newest last.
+export async function launchApp ({ env = {}, songs = [] } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yasapp-e2e-'))
   const audioFolder = path.join(dir, 'audio')
+  fs.mkdirSync(audioFolder)
+  songs.forEach((song, index) => {
+    const file = makeSong(audioFolder, song)
+    const time = Date.now() / 1000 - (songs.length - index) * 60
+    fs.utimesSync(file, time, time)
+  })
   const app = await electron.launch({
     args: [root],
     cwd: root,

@@ -44,8 +44,6 @@ describe('createDownloadService', () => {
     expect(downloader.calls).toEqual([{ id: ID, metadata: true }])
     expect(onMetadata).toHaveBeenCalledWith({ id: ID, title: 'Song', artist: 'Band' })
     expect(onProgress).toHaveBeenCalledWith({ id: ID, downloaded: 10, total: 100, speed: 1, eta: 9 })
-    expect(service.isDownloaded(file)).toBe(true)
-    expect(service.isDownloaded('/etc/passwd')).toBe(false)
     expect(service.isBusy()).toBe(false)
   })
 

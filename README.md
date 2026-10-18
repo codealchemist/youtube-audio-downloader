@@ -1,8 +1,25 @@
 # YouTube Audio Downloader
 
-A desktop app for macOS, Windows and Linux that saves the audio of a YouTube
-video as mp3. Paste a link or video id and the file is saved, tagged with the
-title, artist and cover art, and played in the window.
+A desktop app for macOS, Windows and Linux that saves the audio of YouTube
+videos as mp3 and plays them.
+
+- **Download queue.** Paste one link or many (one per line, or separated by
+  spaces or commas). They download one after another, each showing whether
+  it's waiting, downloading (with progress), saved or failed. Failed downloads
+  can be retried.
+- **Library.** Every mp3 in the download folder is listed with its cover,
+  artist, size and date, newest first or by name, with search.
+- **Player.** Play, pause, previous, next, seek and volume, with the song's
+  cover in the player and blurred behind the window. Space plays and pauses,
+  and media keys work.
+- **Rename, delete and share.** Rename a song's file in place, move it to the
+  Trash (Recycle Bin), or share it: on macOS through the system share sheet
+  (AirDrop, Messages, Mail...), and everywhere by copying its YouTube link or
+  showing the file in its folder.
+
+Songs are saved tagged with the title, artist and cover art. The cover shown
+in the app is read from those tags, so songs downloaded by older versions or
+other apps show theirs too.
 
 It's built with [Electron](https://www.electronjs.org) on top of
 [youtube-audio-server](https://github.com/codealchemist/youtube-audio-server).
@@ -59,7 +76,12 @@ Windows, and deb, rpm and zip on Linux.
   reaches the app only through a small bridge (`src/preload/preload.cjs`), and
   the main process checks that each call comes from the app's own page.
 - Input is checked to be a YouTube video before anything runs, and video titles
-  are shown as text, never as HTML.
+  and file names are shown as text, never as HTML.
+- The page refers to songs by file name only. The main process resolves each
+  name inside the download folder and refuses anything else, new names are
+  cleaned of path separators and reserved characters, and deleting asks first
+  and moves the file to the Trash. Covers reach the page as image data (JPEG or
+  PNG only), never as file paths.
 - A Content-Security-Policy blocks inline and remote scripts. Navigation,
   pop-ups, webviews and permission requests are refused.
 - Packaged builds turn off Electron features the app doesn't use (running as
